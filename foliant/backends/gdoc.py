@@ -27,7 +27,6 @@ class Backend(Backend):
                 command = self._get_docx_command()
                 self.logger.debug('Creating the doc.')
                 run(command, shell=True, check=True, stdout=PIPE, stderr=STDOUT)
-                # return f'{self._slug}.docx'
 
             except CalledProcessError as exception:
                 raise RuntimeError(f'Build failed: {exception.output.decode()}')
