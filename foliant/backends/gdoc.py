@@ -35,28 +35,35 @@ class Backend(Backend):
                 raise type(exception)(f'Build failed: {exception}')
 
     def _gdrive_auth(self):
+        if not self._gdoc_config['under_docker']:
+            self._gdoc_config['under_docker'] = False
+
         gauth = GoogleAuth()
 
-        if True:  # Used while debugging to reduce amount of new tabs
-            gauth.LocalWebserverAuth()
+        if self._gdoc_config['under_docker']:
+            gauth.CommandLineAuth()
             self._gdrive = GoogleDrive(gauth)
         else:
-            gauth.LoadCredentialsFile('client_creds.txt')
-
-            if gauth.credentials is None:
+            if True:  # Used while debugging to reduce amount of new tabs
                 gauth.LocalWebserverAuth()
-            elif gauth.access_token_expired:
-                gauth.Refresh()
+                self._gdrive = GoogleDrive(gauth)
             else:
-                gauth.Authorize()
+                gauth.LoadCredentialsFile('client_creds.txt')
 
-            gauth.SaveCredentialsFile('client_creds.txt')
-            self._gdrive = GoogleDrive(gauth)
+                if gauth.credentials is None:
+                    gauth.LocalWebserverAuth()
+                elif gauth.access_token_expired:
+                    gauth.Refresh()
+                else:
+                    gauth.Authorize()
+
+                gauth.SaveCredentialsFile('client_creds.txt')
+                self._gdrive = GoogleDrive(gauth)
 
     def _create_gdrive_folder(self):
 
         if not self._gdoc_config['gdrive_folder_id']:
-            folder = self._gdrive.CreateFile({'title': self._gdoc_config['gdrive_folder_name'], 'mimeType': 'application/vnd.google-apps.folder'})
+            folder = self._gdrive.CreateFile({'title': 'Foliant upload', 'mimeType': 'application/vnd.google-apps.folder'})
             folder.Upload()
             self._gdoc_config['gdrive_folder_id'] = folder['id']
 
