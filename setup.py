@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-SHORT_DESCRIPTION = 'Docx to Google Drive uploader.'
+SHORT_DESCRIPTION = 'Documents to Google Drive uploader.'
 
 try:
     with open('README.md', encoding='utf8') as readme:
@@ -16,16 +16,16 @@ setup(
     description=SHORT_DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
-    version='1.0.1',
+    version='1.1.0',
     author='Anton Bukhtiyarov',
     author_email='apkraft@gmail.com',
     url='https://github.com/foliant-docs/foliantcontrib.gdoc',
-    packages=['foliant.backends'],
+    packages=['foliant.cli'],
     license='MIT',
     platforms='any',
     install_requires=[
         'foliant>=1.0.5',
-        'foliantcontrib.pandoc>=1.0.6',
+        'cliar',
         'PyDrive'
     ],
     classifiers=[

@@ -1,46 +1,40 @@
-from subprocess import run, PIPE, STDOUT, CalledProcessError
+'''CLI extension for the ``gupload`` command.'''
+
 import os
+from pathlib import Path
 import webbrowser
 
+from cliar import Cliar, set_arg_map, set_metavars, set_help
+from foliant.cli.base import BaseCli
+from foliant.cli import make
 from foliant.utils import spinner
-from foliant.backends.pandoc import Backend
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-class Backend(Backend):
 
-    targets = ('gdoc')
+class Cli(BaseCli):
+    # @set_arg_map({'project_path': 'path', 'config_file_name': 'config'})
+    @set_metavars({'filetype': 'FILETYPE'})
+    # @set_help(
+    #     {
+    #         'filetype': 'filetype: docx, pdf, etc.',
+    #         'config_file_name': 'Name of config file of the Foliant project',
+    #         'debug': 'Log all events during build. If not set, only warnings and errors are logged'
+    #     }
+    # )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self._gdoc_config = self.config.get('backend_config', {}).get('gdoc', {})
-        self._slug = f'{self._pandoc_config.get("slug", self.get_slug())}'
-
-        self.logger = self.logger.getChild('gdoc')
-        self.logger.debug(f'Backend inited: {self.__dict__}')
-
-    def _create_the_doc(self):
-        with spinner('Making docx with Pandoc', self.logger, self.quiet):
-            try:
-                command = self._get_docx_command()
-                self.logger.debug('Creating the doc.')
-                run(command, shell=True, check=True, stdout=PIPE, stderr=STDOUT)
-
-            except CalledProcessError as exception:
-                raise RuntimeError(f'Build failed: {exception.output.decode()}')
-
-            except Exception as exception:
-                raise type(exception)(f'Build failed: {exception}')
+        self.logger = self.logger.getChild('gdrive')
 
     def _gdrive_auth(self):
-        if not self._gdoc_config['under_docker']:
-            self._gdoc_config['under_docker'] = False
+        if not self._gdoc_config['com_line_auth']:
+            self._gdoc_config['com_line_auth'] = False
 
         gauth = GoogleAuth()
 
-        if self._gdoc_config['under_docker']:
+        if self._gdoc_config['com_line_auth']:
             gauth.CommandLineAuth()
             self._gdrive = GoogleDrive(gauth)
         else:
@@ -67,19 +61,18 @@ class Backend(Backend):
             folder.Upload()
             self._gdoc_config['gdrive_folder_id'] = folder['id']
 
-
     def _upload_file(self):
         if self._gdoc_config['gdoc_title']:
             title = self._gdoc_config['gdoc_title']
         else:
-            title = self._slug
-        
+            title = self._filename
+
         if self._gdoc_config['gdoc_id']:
             upload_file = self._gdrive.CreateFile({'title': title, 'id': self._gdoc_config['gdoc_id'], 'parents': [{'id': self._gdoc_config['gdrive_folder_id']}], 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
         else:
             upload_file = self._gdrive.CreateFile({'title': title, 'parents': [{'id': self._gdoc_config['gdrive_folder_id']}], 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
 
-        upload_file.SetContentFile('/'.join((os.getcwd(), f'{self._slug}.docx')))
+        upload_file.SetContentFile('/'.join((os.getcwd(), f'{self._filename}')))
         upload_file.Upload(param={'convert': True})
 
         self._gdoc_config['gdoc_id'] = upload_file['id']
@@ -87,15 +80,31 @@ class Backend(Backend):
 
         webbrowser.open(self._gdoc_link)
 
-    def make(self, target):
-        self._create_the_doc()
+    def gupload(self, filetype):
 
-        self._gdrive_auth()
+        file_upload = make.Cli()
+        self._filename = file_upload.make(filetype)
 
-        self._create_gdrive_folder()
+        print('─────────────────────')
 
-        self._upload_file()
+        self._gdoc_config = file_upload.get_config(Path('.'), 'foliant.yml')['gdrive_upload']
 
-        return f"\nDoc link: {self._gdoc_link}\n\
+        if self._filename:
+
+            self._gdrive_auth()
+
+            with spinner(f"Uploading '{self._filename}' to Google Drive", self.logger, quiet=False):
+                try:
+                    self._create_gdrive_folder()
+                    self._upload_file()
+
+                except Exception as exception:
+                    raise type(exception)(f'The error occurs: {exception}')
+
+        print('─────────────────────')
+        print(f"Result:\n\
+Doc link: {self._gdoc_link}\n\
 Google drive folder ID: {self._gdoc_config['gdrive_folder_id']}\n\
-Google document ID: {self._gdoc_config['gdoc_id']}"
+Google document ID: {self._gdoc_config['gdoc_id']}")
+
+        return self._gdoc_link

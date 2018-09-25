@@ -1,3 +1,7 @@
+# 1.1.0
+
+-   Backend was converted to CLI extension.
+
 # 1.0.1
 
--   Another type of authentication was added for Docker use.
+-   Command line authentication was added, for example for Docker use.
