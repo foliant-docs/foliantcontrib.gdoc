@@ -1,8 +1,8 @@
 # Docx to Google Drive uploader for Foliant
 
-Gdoc is an extension of Pandoc backend, it's used to upload created docx documents to Google Drive.
+Gdoc is the Foliant CLI extension, it's used to upload created documents to Google Drive.
 
-Gdoc adds `gdoc` target to Foliant.
+Gdoc adds `gupload` command to Foliant.
 
 
 ## Installation
@@ -14,20 +14,17 @@ $ pip install foliantcontrib.gdoc
 
 ## Config
 
-To enable the backend, add `gdoc` to `backend_config` section in the project config. As `gdoc` needs *docx* to upload, `pandoc` settings also have to be here.
+To config the CLI extension, add `gdrive_upload` section in the project config. As `gdoc` needs document to upload, appropriate backend settings also have to be here.
 
-Backend has a number of options (all fields are required but can have no values):
+CLI extension has a number of options (all fields are required but can have no values):
 
 ```yaml
-backend_config:
-    pandoc:
-        ...
-    gdoc:
-        gdrive_folder_name: Foliant upload
-        gdrive_folder_id:
-        gdoc_title:
-        gdoc_id:
-        under_docker: false
+gdrive_upload:
+    gdrive_folder_name: Foliant upload
+    gdrive_folder_id:
+    gdoc_title:
+    gdoc_id:
+    com_line_auth: false
 ```
 
 `gdrive_folder_name`
@@ -41,6 +38,9 @@ backend_config:
 
 `gdoc_id`
 :   This field is necessary to rewrite previously uploaded file and keep the link to it.
+
+`com_line_auth`
+:   In some cases it's impossible to authenticate automatically (for example, with Docker), so you can set *True* and use command line authentication procedure.
 
 
 ## Usage
@@ -59,20 +59,25 @@ At first you have to get Google Drive authentication file.
 5. Click ‘Download JSON’ on the right side of Client ID to download client_secret_<really long ID>.json. The downloaded file has all authentication information of your application.
 6. Rename the file to “client_secrets.json” and place it in your working directory near foliant.yml.
 
-Now add the backend to the project config with all settings strings. At this moment you have no data to set *Google Drive folder ID* and *google doc ID* so keep it empty.
+Now add the CLI extension to the project config with all settings strings. At this moment you have no data to set *Google Drive folder ID* and *google doc ID* so keep it empty.
 
-Run Foliant with `gdoc` target:
+Run Foliant with `gupload` command:
 
 ```shell
-$ foliant make gdoc
+$ foliant gupload docx
 ✔ Parsing config
 ✔ Applying preprocessor flatten
 ✔ Making docx with Pandoc
+─────────────────────
+Result: filename.docx
+─────────────────────
+✔ Parsing config
 Your browser has been opened to visit:
 
     https://accounts.google.com/o/oauth2/auth?...
 
 Authentication successful.
+✔ Uploading 'filename.docx' to Google Drive
 ─────────────────────
 Result:
 Doc link: https://docs.google.com/document/d/1GPvNSMJ4ZutZJwhUYM1xxCKWMU5Sg/edit?usp=drivesdk
@@ -82,19 +87,24 @@ Google document ID: 1GPvNSMJ4Z19YM1xCKWMU5Sg
 
 Authentication form will be opened. Choose account to log in.
 
-Under Docker authentication differs little bit:
+With command line authentication procedure differs little bit:
 
 ```
-$ docker-compose run --rm foliant make gdoc
+$ docker-compose run --rm foliant gupload docx
 ✔ Parsing config
 ✔ Applying preprocessor flatten
 ✔ Making docx with Pandoc
+─────────────────────
+Result: filename.docx
+─────────────────────
+✔ Parsing config
 Go to the following link in your browser:
 
     https://accounts.google.com/o/oauth2/auth?...
 
 Enter verification code: 4/XgBllTXpxv8kKjsiTxLc
 Authentication successful.
+✔ Uploading 'filename.docx' to Google Drive
 ─────────────────────
 Result:
 Doc link: https://docs.google.com/document/d/1GPvNSMJ4ZutZJwhUYM1xxCKWMU5Sg/edit?usp=drivesdk
@@ -104,9 +114,9 @@ Google document ID: 1GPvNSMJ4Z19YM1xCKWMU5Sg
 
 Copy link from terminal to your browser, choose account to log in and copy generated code back to the terminal.
 
-After that docx will be uploaded to Google Drive in google doc format and opened in new browser tab.
+After that the document will be uploaded to Google Drive and opened in new browser tab.
 
-Now you can use *Google Drive folder ID* to upload files to the same folder and *google doc ID* (the same as in the link) to rewrite document.
+Now you can use *Google Drive folder ID* to upload files to the same folder and *google doc ID* to rewrite document (also you can IDs in folder and file links).
 
 ### Notes
 
