@@ -87,7 +87,7 @@ class Cli(BaseCli):
 
         print('─────────────────────')
 
-        self._gdoc_config = file_upload.get_config(Path('.'), 'foliant.yml')['gdrive_upload']
+        self._gdoc_config = file_upload.get_config(Path('.'), 'foliant.yml')['gupload']
 
         if self._filename:
 
