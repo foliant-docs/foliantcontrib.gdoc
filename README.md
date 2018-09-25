@@ -1,25 +1,25 @@
-# Docx to Google Drive uploader for Foliant
+# Documents to Google Drive uploader for Foliant
 
-Gdoc is the Foliant CLI extension, it's used to upload created documents to Google Drive.
+Gupload is the Foliant CLI extension, it's used to upload created documents to Google Drive.
 
-Gdoc adds `gupload` command to Foliant.
+Gupload adds `gupload` command to Foliant.
 
 
 ## Installation
 
 ```shell
-$ pip install foliantcontrib.gdoc
+$ pip install foliantcontrib.gupload
 ```
 
 
 ## Config
 
-To config the CLI extension, add `gdrive_upload` section in the project config. As `gdoc` needs document to upload, appropriate backend settings also have to be here.
+To config the CLI extension, add `gupload` section in the project config. As `gupload` needs document to upload, appropriate backend settings also have to be here.
 
 CLI extension has a number of options (all fields are required but can have no values):
 
 ```yaml
-gdrive_upload:
+gupload:
     gdrive_folder_name: Foliant upload
     gdrive_folder_id:
     gdoc_title:

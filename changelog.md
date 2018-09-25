@@ -1,3 +1,7 @@
+# 1.1.1
+
+-   Unification of repository name, settings section name, and command.
+
 # 1.1.0
 
 -   Backend was converted to CLI extension.
