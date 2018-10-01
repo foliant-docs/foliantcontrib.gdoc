@@ -24,6 +24,7 @@ gupload:
     gdrive_folder_id:
     gdoc_title:
     gdoc_id:
+    convert_file:
     com_line_auth: false
 ```
 
@@ -38,6 +39,9 @@ gupload:
 
 `gdoc_id`
 :   This field is necessary to rewrite previously uploaded file and keep the link to it.
+
+`convert_file`
+:   Convert uploaded files to google docs format or not.
 
 `com_line_auth`
 :   In some cases it's impossible to authenticate automatically (for example, with Docker), so you can set *True* and use command line authentication procedure.
