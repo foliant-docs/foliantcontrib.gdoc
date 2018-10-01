@@ -38,7 +38,7 @@ class Cli(BaseCli):
             gauth.CommandLineAuth()
             self._gdrive = GoogleDrive(gauth)
         else:
-            if True:  # Used while debugging to reduce amount of new tabs
+            if True:  # 'False' while debugging to reduce amount of new tabs
                 gauth.LocalWebserverAuth()
                 self._gdrive = GoogleDrive(gauth)
             else:
@@ -61,19 +61,33 @@ class Cli(BaseCli):
             folder.Upload()
             self._gdoc_config['gdrive_folder_id'] = folder['id']
 
-    def _upload_file(self):
+    def _upload_file(self, filetype):
         if self._gdoc_config['gdoc_title']:
             title = self._gdoc_config['gdoc_title']
         else:
             title = self._filename
 
-        if self._gdoc_config['gdoc_id']:
-            upload_file = self._gdrive.CreateFile({'title': title, 'id': self._gdoc_config['gdoc_id'], 'parents': [{'id': self._gdoc_config['gdrive_folder_id']}], 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+        if filetype == 'docx':
+            mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        elif filetype == 'pdf':
+            mimetype = 'application/pdf'
+        elif filetype == 'tex':
+            mimetype = 'application/x-latex'
         else:
-            upload_file = self._gdrive.CreateFile({'title': title, 'parents': [{'id': self._gdoc_config['gdrive_folder_id']}], 'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+            mimetype = 'application/vnd.google-apps.document'
+
+        if self._gdoc_config['gdoc_id']:
+            upload_file = self._gdrive.CreateFile({'title': title, 'id': self._gdoc_config['gdoc_id'], 'parents': [{'id': self._gdoc_config['gdrive_folder_id']}], 'mimeType': mimetype})
+        else:
+            upload_file = self._gdrive.CreateFile({'title': title, 'parents': [{'id': self._gdoc_config['gdrive_folder_id']}], 'mimeType': mimetype})
+
+        if self._gdoc_config['convert_file']:
+            convert = self._gdoc_config['convert_file']
+        else:
+            convert = False
 
         upload_file.SetContentFile('/'.join((os.getcwd(), f'{self._filename}')))
-        upload_file.Upload(param={'convert': True})
+        upload_file.Upload(param={'convert': convert})
 
         self._gdoc_config['gdoc_id'] = upload_file['id']
         self._gdoc_link = upload_file['alternateLink']
@@ -96,7 +110,7 @@ class Cli(BaseCli):
             with spinner(f"Uploading '{self._filename}' to Google Drive", self.logger, quiet=False):
                 try:
                     self._create_gdrive_folder()
-                    self._upload_file()
+                    self._upload_file(filetype)
 
                 except Exception as exception:
                     raise type(exception)(f'The error occurs: {exception}')

@@ -1,3 +1,7 @@
+# 1.1.2
+
+-   Convert to google docs format setting added.
+
 # 1.1.1
 
 -   Unification of repository name, settings section name, and command.
