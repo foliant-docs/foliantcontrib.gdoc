@@ -26,7 +26,6 @@ class Cli(BaseCli):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = self.logger.getChild('gdrive')
 
     def _gdrive_auth(self):
         if not self._gdoc_config['com_line_auth']:

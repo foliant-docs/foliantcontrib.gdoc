@@ -1,3 +1,7 @@
+# 1.1.3
+
+-   Logger bug fixed.
+
 # 1.1.2
 
 -   Convert to google docs format setting added.
