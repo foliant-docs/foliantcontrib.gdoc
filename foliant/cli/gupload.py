@@ -1,12 +1,13 @@
 '''CLI extension for the ``gupload`` command.'''
 
 import os
+from cliar import set_arg_map, set_metavars, set_help, ignore
 from pathlib import Path
 import webbrowser
 
-from cliar import Cliar, set_arg_map, set_metavars, set_help
-from foliant.cli.base import BaseCli
 from foliant.cli import make
+from foliant.cli.base import BaseCli
+from foliant.config import Parser
 from foliant.utils import spinner
 
 from pydrive.auth import GoogleAuth
@@ -14,19 +15,6 @@ from pydrive.drive import GoogleDrive
 
 
 class Cli(BaseCli):
-    # @set_arg_map({'project_path': 'path', 'config_file_name': 'config'})
-    @set_metavars({'filetype': 'FILETYPE'})
-    # @set_help(
-    #     {
-    #         'filetype': 'filetype: docx, pdf, etc.',
-    #         'config_file_name': 'Name of config file of the Foliant project',
-    #         'debug': 'Log all events during build. If not set, only warnings and errors are logged'
-    #     }
-    # )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def _gdrive_auth(self):
         if not self._gdoc_config['com_line_auth']:
             self._gdoc_config['com_line_auth'] = False
@@ -55,22 +43,25 @@ class Cli(BaseCli):
 
     def _create_gdrive_folder(self):
 
+        if not self._gdoc_config['gdrive_folder_name']:
+            self._gdoc_config['gdrive_folder_name'] = 'Foliant upload'
+
         if not self._gdoc_config['gdrive_folder_id']:
-            folder = self._gdrive.CreateFile({'title': 'Foliant upload', 'mimeType': 'application/vnd.google-apps.folder'})
+            folder = self._gdrive.CreateFile({'title': self._gdoc_config['gdrive_folder_name'], 'mimeType': 'application/vnd.google-apps.folder'})
             folder.Upload()
             self._gdoc_config['gdrive_folder_id'] = folder['id']
 
-    def _upload_file(self, filetype):
+    def _upload_file(self, target):
         if self._gdoc_config['gdoc_title']:
             title = self._gdoc_config['gdoc_title']
         else:
             title = self._filename
 
-        if filetype == 'docx':
+        if target == 'docx':
             mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        elif filetype == 'pdf':
+        elif target == 'pdf':
             mimetype = 'application/pdf'
-        elif filetype == 'tex':
+        elif target == 'tex':
             mimetype = 'application/x-latex'
         else:
             mimetype = 'application/vnd.google-apps.document'
@@ -93,31 +84,60 @@ class Cli(BaseCli):
 
         webbrowser.open(self._gdoc_link)
 
-    def gupload(self, filetype):
+    @set_arg_map({'backend': 'with', 'project_path': 'path', 'config_file_name': 'config'})
+    @set_metavars({'target': 'TARGET', 'backend': 'BACKEND'})
+    @set_help(
+        {
+            'target': 'Target format: pdf, docx, html, etc.',
+            'backend': 'Backend to make the target with: Pandoc, MkDocs, etc.',
+            'project_path': 'Path to the Foliant project',
+            'config_file_name': 'Name of config file of the Foliant project',
+            'quiet': 'Hide all output accept for the result. Useful for piping.',
+            'keep_tmp': 'Keep the tmp directory after the build.',
+            'debug': 'Log all events during build. If not set, only warnings and errors are logged.'
+        }
+    )
+    def gupload(
+            self,
+            target,
+            backend='',
+            project_path=Path('.'),
+            config_file_name='foliant.yml',
+            quiet=False,
+            keep_tmp=False,
+            debug=False
+        ):
 
-        file_upload = make.Cli()
-        self._filename = file_upload.make(filetype)
+        file_to_upload = make.Cli()
+        self._filename = file_to_upload.make(target, backend, project_path, config_file_name, quiet, keep_tmp, debug)
 
         print('─────────────────────')
 
-        self._gdoc_config = file_upload.get_config(Path('.'), 'foliant.yml')['gupload']
+        self._gdoc_config = file_to_upload.get_config(project_path, config_file_name, quiet=True)['gupload']
 
-        if self._filename:
+        self._gdrive_auth()
 
-            self._gdrive_auth()
+        with spinner(f"Uploading '{self._filename}' to Google Drive", self.logger, quiet=False):
+            try:
+                self._create_gdrive_folder()
+                self._upload_file(target)
 
-            with spinner(f"Uploading '{self._filename}' to Google Drive", self.logger, quiet=False):
-                try:
-                    self._create_gdrive_folder()
-                    self._upload_file(filetype)
+            except Exception as exception:
+                raise type(exception)(f'The error occurs: {exception}')
 
-                except Exception as exception:
-                    raise type(exception)(f'The error occurs: {exception}')
+        if self._gdoc_link:
+            self.logger.info(f'File {self._filename} uploaded to Google Drive: {self._gdoc_link}')
 
-        print('─────────────────────')
-        print(f"Result:\n\
+            if not quiet:
+                print('─────────────────────')
+                print(f"Result:\n\
 Doc link: {self._gdoc_link}\n\
 Google drive folder ID: {self._gdoc_config['gdrive_folder_id']}\n\
 Google document ID: {self._gdoc_config['gdoc_id']}")
 
-        return self._gdoc_link
+            return self._gdoc_link
+
+        else:
+            self.logger.critical('Upload failed')
+            exit('Upload failed')
+            return None

@@ -1,3 +1,7 @@
+# 1.1.4
+
+-   Code refactored.
+
 # 1.1.3
 
 -   Logger bug fixed.
