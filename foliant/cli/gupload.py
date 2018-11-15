@@ -117,7 +117,7 @@ class Cli(BaseCli):
 
         self._gdrive_auth()
 
-        with spinner(f"Uploading '{self._filename}' to Google Drive", self.logger, quiet=False):
+        with spinner(f"Uploading '{self._filename}' to Google Drive", self.logger, quiet=False, debug=False):
             try:
                 self._create_gdrive_folder()
                 self._upload_file(target)
