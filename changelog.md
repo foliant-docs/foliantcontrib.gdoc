@@ -1,3 +1,7 @@
+# 1.1.5
+
+-   Provide compatibility with Foliant 1.0.8.
+
 # 1.1.4
 
 -   Code refactored.
